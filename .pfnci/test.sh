@@ -10,6 +10,6 @@ docker run --interactive --rm \
 source /root/.bashrc
 pyenv global 3.5.7 3.6.8 3.7.2
 tox
-pip install sphinx
+pip install .[doc]
 cd docs && make html
 EOD
