@@ -134,19 +134,21 @@ def test_preservation_interoperability():
         cache2.close()
 
 
-def test_preservation_error_already_exists():
+def test_preservation_overwrite():
     with tempfile.TemporaryDirectory() as d:
         cache = MultiprocessFileCache(10, dir=d, do_pickle=True)
 
         for i in range(10):
             cache.put(i, str(i))
 
-        cache.preserve('preserved')
+        # Create a dummy file
+        with open(os.path.join(d, 'preserved.cachei'), 'wt') as f:
+            f.write('hello')
 
-        with pytest.raises(ValueError):
+        with pytest.raises(FileExistsError):
             cache.preserve('preserved')
 
-        cache.close()
+        cache.preserve('preserved', overwrite=True)
 
 
 def test_preserve_error_subprocess():

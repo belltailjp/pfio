@@ -328,7 +328,7 @@ class MultiprocessFileCache(cache.Cache):
         self.index_file = _DummyTemporaryFile(ld_index_file)
         self._frozen = True
 
-    def preserve(self, name):
+    def preserve(self, name, overwrite=False):
         '''Preserve the cache as persistent files on the disk
 
         Once the cache is preserved, cache files will not be removed
@@ -345,6 +345,13 @@ class MultiprocessFileCache(cache.Cache):
 
         .. note:: This feature is experimental.
 
+        Arguments:
+            name (str): Prefix of the preserved file names.
+                ``(name).cachei`` and ``(name).cached`` are created.
+                The files are created in the same directory as the cache
+                (``dir`` option to ``__init__``).
+
+            overwrite (bool): Overwrite if already exists
         '''
 
         if self._master_pid != os.getpid():
@@ -353,13 +360,15 @@ class MultiprocessFileCache(cache.Cache):
         index_file = os.path.join(self.dir, '{}.cachei'.format(name))
         data_file = os.path.join(self.dir, '{}.cached'.format(name))
 
-        if any(os.path.exists(p) for p in (index_file, data_file)):
-            raise ValueError('Specified cache name "{}" already exists in {}'
-                             .format(name, self.dir))
-
         self._open_fds()
         try:
             fcntl.flock(self.index_fd, fcntl.LOCK_EX)
+            if overwrite:
+                if os.path.exists(index_file):
+                    os.unlink(index_file)
+                if os.path.exists(data_file):
+                    os.unlink(data_file)
+
             os.link(self.index_file.name, index_file)
             os.link(self.data_file.name, data_file)
 

@@ -39,7 +39,9 @@ def test_preservation():
         for i in range(10):
             cache.put(i, str(i))
 
-        cache.preserve('preserved')
+        # Support preserving multiple times with both alive
+        cache.preserve('preserved1')
+        cache.preserve('preserved2')
 
         for i in range(10):
             assert str(i) == cache.get(i)
@@ -48,10 +50,38 @@ def test_preservation():
 
         # Imitating a new process, fresh load
         cache2 = FileCache(10, dir=d, do_pickle=True)
+        cache3 = FileCache(10, dir=d, do_pickle=True)
 
-        cache2.preload('preserved')
+        cache2.preload('preserved1')
+        cache3.preload('preserved2')
         for i in range(10):
             assert str(i) == cache2.get(i)
+            assert str(i) == cache2.get(i)
+
+
+def test_preservation_multiple_times():
+    with tempfile.TemporaryDirectory() as d:
+        cache = FileCache(1, dir=d, do_pickle=True)
+        cache.put(0, 'hello')
+        cache.preserve('preserved')
+        cache.preserve('preserved')
+
+
+def test_preservation_overwrite():
+    with tempfile.TemporaryDirectory() as d:
+        cache = FileCache(10, dir=d, do_pickle=True)
+
+        for i in range(10):
+            cache.put(i, str(i))
+
+        # Create a dummy file
+        with open(os.path.join(d, 'preserved.cachei'), 'wt') as f:
+            f.write('hello')
+
+        with pytest.raises(FileExistsError):
+            cache.preserve('preserved')
+
+        cache.preserve('preserved', overwrite=True)
 
 
 def test_preservation_interoperability():

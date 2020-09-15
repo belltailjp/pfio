@@ -290,7 +290,7 @@ class FileCache(cache.Cache):
             self.datafp = open(datafile, 'rb')
             self._frozen = True
 
-    def preserve(self, name):
+    def preserve(self, name, overwrite=False):
         '''Preserve the cache as persistent files on the disk
 
         Once the cache is preserved, cache files will not be removed
@@ -304,12 +304,26 @@ class FileCache(cache.Cache):
 
         .. note:: This feature is experimental.
 
+        Arguments:
+            name (str): Prefix of the preserved file names.
+                ``(name).cachei`` and ``(name).cached`` are created.
+                The files are created in the same directory as the cache
+                (``dir`` option to ``__init__``).
+
+            overwrite (bool): Overwrite if already exists
+
         '''
 
         indexfile = os.path.join(self.dir, '{}.cachei'.format(name))
         datafile = os.path.join(self.dir, '{}.cached'.format(name))
 
         with self.lock.wrlock():
+            if overwrite:
+                if os.path.exists(indexfile):
+                    os.unlink(indexfile)
+                if os.path.exists(datafile):
+                    os.unlink(datafile)
+
             # Hard link and save them
             os.link(self.indexfp.name, indexfile)
             os.link(self.datafp.name, datafile)
